@@ -39,6 +39,20 @@
       padding: 2% 2%;
       text-align: left;
     }
+
+    .button {
+      background-color: black;
+      color: red;
+      font-family: verdana;
+      font-size: 7vw;
+      border: 1px solid red;
+      padding: 2% 2%;
+      text-align: left;
+    }
+
+    .fullWidth{
+      width: 100%;
+    }
   </style>
 
   <script>
@@ -49,6 +63,7 @@
       var dbVersion = 2.0;
       var openRequest = indexedDB.open("joinzDB", dbVersion);
       //handle setup - as the spec like it
+
       openRequest.onupgradeneeded = function(e) {
         console.log("running onupgradeneeded");
         var thisDb = e.target.result;
@@ -62,7 +77,7 @@
             autoIncrement: true
           });
           objectStore.createIndex("name", "name", {
-            unique: false
+            unique: true
           });
         }
       }
@@ -88,42 +103,44 @@
           // Don't forget to handle errors!
           console.dir(event);
         };
+      }
 
+      function displayMatches() {
+            document.getElementById("listNames").innerHTML="";
+        var transaction = db.transaction(["things"], "readwrite");
         var objectStore = transaction.objectStore("things");
-        //use put versus add to always write, even if exists
-        //name = document.getElementById("name").value
-        objectStore.getAll().onsuccess = function(event) {
-       console.log( event.target.result);
-   };
-   objectStore.openCursor().onsuccess = function(event) {
+        var keyRangeValue = IDBKeyRange.bound(document.getElementById("name").value, document.getElementById("name").value + "\uffff");
+        objectStore.index("name").openCursor(keyRangeValue).onsuccess = function(event) {
           var cursor = event.target.result;
+
           if (cursor) {
-            console.log(cursor.key);
-            console.dir(cursor.value.name);
+            var node = document.createElement("BUTTON");
+          var textnode = document.createTextNode(cursor.value.name);
+          node.appendChild(textnode);
+          btn = document.getElementById("listNames").appendChild(node);
+          btn.classList.add("button","fullWidth");
+          //console.log('Id: ' + cursor.value.id + ' Name: ' + cursor.value.name);
             cursor.continue();
-          }
-          else {
+          } else {
             console.log("Done with cursor");
           }
         };
-        // request.onsuccess = function(event) {
-        //   console.log(request);
-        // };
-
-        console.log("TODO - print something nice on the page");
       }
-      //TEMP TO REMOVE
-      document.getElementById("return").addEventListener("click", function() {
+
+      document.getElementById("name").addEventListener("keyup", function() {
+        displayMatches();
+      });
+
+      document.getElementById("addName").addEventListener("click", function() {
+
         var transaction = db.transaction(["things"], "readwrite");
         transaction.oncomplete = function(event) {
           console.log("All done!");
         };
         transaction.onerror = function(event) {
-          // Don't forget to handle errors!
           console.dir(event);
         };
         var objectStore = transaction.objectStore("things");
-        //use put versus add to always write, even if exists
         name = document.getElementById("name").value
         var request = objectStore.add({
           name: name
@@ -147,7 +164,9 @@
 
 <body>
 
-  <input id="name" type="text" class="inputBox"><button id="return" class="button">S</button>
+  <input id="name" type="text" class="inputBox">
+  <button id="addName" class="button">Add</button>
+  <div id="listNames"></div>
 
 
 </body>
